@@ -21,13 +21,15 @@ export async function handler(event, context) {
       })
     });
 
-    const rawText = await loginResponse.text();  // 👈 نطبع النص الخام بدل .json()
+    const rawText = await loginResponse.text();
+    console.log("🔥 Raw Response:", rawText); // 👈 هنا هنطبع في اللوج بس
 
     return {
       statusCode: 200,
-      body: rawText
+      body: JSON.stringify({ msg: "Check Netlify Logs!" }) // نطبع رسالة سريعة بس
     };
   } catch (error) {
+    console.error("❌ ERROR:", error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message })
