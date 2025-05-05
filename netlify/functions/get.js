@@ -5,7 +5,7 @@ export async function handler(event, context) {
   const PASSWORD = "Moodz@Hesham@1998";
 
   try {
-    // Step 1: Authenticate
+    // Step 1: Login
     const loginResponse = await fetch(`${ODOO_URL}/web/session/authenticate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -21,40 +21,41 @@ export async function handler(event, context) {
     });
 
     const loginData = await loginResponse.json();
+    const session_id = loginResponse.headers.get("set-cookie")?.split(";")[0];
 
-    // Check for login success
-    if (!loginData.result || !loginData.result.session_id) {
-      throw new Error("Authentication failed: Invalid credentials or session.");
+    if (!loginData.result || !session_id) {
+      throw new Error("Login failed: No session ID returned.");
     }
 
-    const session_id = loginData.result.session_id;
-
-    // Step 2: Call API
-    const result = await fetch(`${ODOO_URL}/web/dataset/call_kw/res.partner/search_read`, {
+    // Step 2: Call search_read from correct endpoint
+    const result = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "X-Openerp-Session-Id": session_id,  // Optional for some setups
-        "Cookie": `session_id=${session_id}`,  // Send full cookie
+        "Cookie": session_id,
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "call",
         params: {
           model: "res.partner",
-          domain: [["is_company", "=", true]],
-          fields: ["name", "email"],
-          limit: 5,
+          method: "search_read",
+          args: [],
+          kwargs: {
+            domain: [["is_company", "=", true]],
+            fields: ["name", "email"],
+            limit: 5,
+          },
         },
       }),
     });
 
     const data = await result.json();
-    console.log("✅ Response from Odoo:", JSON.stringify(data));
+    console.log("✅ Response from Odoo:", data);
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data),
+      body: JSON.stringify(data, null, 2),
     };
 
   } catch (error) {
