@@ -5,7 +5,6 @@ export async function handler(event, context) {
   const PASSWORD = "Moodz@Hesham@1998";
 
   try {
-    // 1. Login
     const loginResponse = await fetch(`${ODOO_URL}/web/session/authenticate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -23,7 +22,6 @@ export async function handler(event, context) {
     const loginData = await loginResponse.json();
     const session_id = loginResponse.headers.get("set-cookie")?.split(";")[0];
 
-    // 2. Read Data from res.partner
     const result = await fetch(`${ODOO_URL}/web/dataset/call_kw/res.partner/search_read`, {
       method: "POST",
       headers: {
@@ -43,6 +41,7 @@ export async function handler(event, context) {
     });
 
     const data = await result.json();
+    console.log("💡 Response from Odoo:", JSON.stringify(data));
 
     return {
       statusCode: 200,
@@ -50,6 +49,7 @@ export async function handler(event, context) {
     };
 
   } catch (error) {
+    console.error("🔥 Error:", error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message }),
