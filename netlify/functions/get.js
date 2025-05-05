@@ -2,7 +2,7 @@ export async function handler(event, context) {
   const ODOO_URL = "https://amsterdam.odoo.com";
   const DB_NAME = "amsterdam";
   const USERNAME = "ahmedhesham99133@gmail.com";
-  const API_KEY = "e8a4cf4b1268f170ce9baf3181ab24cb23e97d13";
+  const PASSWORD = "Moodz@Hesham@1998";
 
   try {
     const loginResponse = await fetch(`${ODOO_URL}/web/session/authenticate`, {
@@ -14,7 +14,7 @@ export async function handler(event, context) {
         params: {
           db: DB_NAME,
           login: USERNAME,
-          password: API_KEY
+          password: PASSWORD
         }
       }),
     });
