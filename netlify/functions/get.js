@@ -5,6 +5,7 @@ export async function handler(event, context) {
   const PASSWORD = "Moodz@Hesham@1998";
 
   try {
+    // Step 1: Authenticate
     const loginResponse = await fetch(`${ODOO_URL}/web/session/authenticate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -20,13 +21,21 @@ export async function handler(event, context) {
     });
 
     const loginData = await loginResponse.json();
-    const session_id = loginResponse.headers.get("set-cookie")?.split(";")[0];
 
+    // Check for login success
+    if (!loginData.result || !loginData.result.session_id) {
+      throw new Error("Authentication failed: Invalid credentials or session.");
+    }
+
+    const session_id = loginData.result.session_id;
+
+    // Step 2: Call API
     const result = await fetch(`${ODOO_URL}/web/dataset/call_kw/res.partner/search_read`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cookie": session_id,
+        "X-Openerp-Session-Id": session_id,  // Optional for some setups
+        "Cookie": `session_id=${session_id}`,  // Send full cookie
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
@@ -41,7 +50,7 @@ export async function handler(event, context) {
     });
 
     const data = await result.json();
-    console.log("💡 Response from Odoo:", JSON.stringify(data));
+    console.log("✅ Response from Odoo:", JSON.stringify(data));
 
     return {
       statusCode: 200,
