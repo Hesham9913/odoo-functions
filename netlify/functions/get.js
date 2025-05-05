@@ -5,12 +5,10 @@ export async function handler(event, context) {
   const PASSWORD = "Moodz@Hesham@1998";
 
   try {
-    // Step 1: Authenticate
+    // 1. Login
     const loginResponse = await fetch(`${ODOO_URL}/web/session/authenticate`, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "call",
@@ -24,22 +22,37 @@ export async function handler(event, context) {
 
     const loginData = await loginResponse.json();
     const session_id = loginResponse.headers.get("set-cookie")?.split(";")[0];
-    const uid = loginData.result?.uid;
 
-    console.log("Login Data:", loginData);
-    console.log("Session ID:", session_id);
-    console.log("UID:", uid);
+    // 2. Read Data from res.partner
+    const result = await fetch(`${ODOO_URL}/web/dataset/call_kw/res.partner/search_read`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cookie": session_id,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "call",
+        params: {
+          model: "res.partner",
+          domain: [["is_company", "=", true]],
+          fields: ["name", "email"],
+          limit: 5,
+        },
+      }),
+    });
+
+    const data = await result.json();
 
     return {
       statusCode: 200,
-      body: JSON.stringify({ loginData, session_id, uid }, null, 2),
+      body: JSON.stringify(data),
     };
-  } catch (error) {
-    console.error("Authentication error:", error);
 
+  } catch (error) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "Authentication failed", details: error.message }),
+      body: JSON.stringify({ error: error.message }),
     };
   }
 }
