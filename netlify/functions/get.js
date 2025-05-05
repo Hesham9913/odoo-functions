@@ -21,11 +21,11 @@ export async function handler(event, context) {
       })
     });
 
-    const loginData = await loginResponse.json();
+    const rawText = await loginResponse.text();  // 👈 نطبع النص الخام بدل .json()
 
     return {
       statusCode: 200,
-      body: JSON.stringify(loginData, null, 2) // 👈 Debug كامل
+      body: rawText
     };
   } catch (error) {
     return {
