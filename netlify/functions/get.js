@@ -5,8 +5,8 @@ export async function handler(event, context) {
   const PASSWORD = "Moodz@Hesham@1998";
 
   try {
-    // Step 1: Login
-    const loginResponse = await fetch(`${ODOO_URL}/web/session/authenticate`, {
+    // Step 1: Login to Odoo
+    const loginRes = await fetch(`${ODOO_URL}/web/session/authenticate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -20,25 +20,29 @@ export async function handler(event, context) {
       }),
     });
 
-    const loginData = await loginResponse.json();
-    const session_id = loginResponse.headers.get("set-cookie")?.split(";")[0];
+    const loginData = await loginRes.json();
+    const sessionCookie = loginRes.headers.get("set-cookie");
+    const session_id = sessionCookie?.split(";")[0]?.split("=")[1];
 
-    if (!loginData.result || !session_id) {
-      throw new Error("Login failed: No session ID returned.");
+    if (!session_id || !loginData.result || !loginData.result.uid) {
+      return {
+        statusCode: 401,
+        body: JSON.stringify({ error: "❌ Authentication failed: Invalid session or credentials" }),
+      };
     }
 
-    // Step 2: Call search_read from correct endpoint
-    const result = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
+    // Step 2: Make API call using session_id
+    const apiRes = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Cookie": session_id,
+        "Cookie": `session_id=${session_id}`,
       },
       body: JSON.stringify({
         jsonrpc: "2.0",
         method: "call",
         params: {
-          model: "res.partner",
+          model: "res.partner", // Example model
           method: "search_read",
           args: [],
           kwargs: {
@@ -50,19 +54,16 @@ export async function handler(event, context) {
       }),
     });
 
-    const data = await result.json();
-    console.log("✅ Response from Odoo:", data);
+    const apiData = await apiRes.json();
 
     return {
       statusCode: 200,
-      body: JSON.stringify(data, null, 2),
+      body: JSON.stringify(apiData, null, 2),
     };
-
   } catch (error) {
-    console.error("🔥 Error:", error.message);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: error.message }),
+      body: JSON.stringify({ error: "🔥 Internal error", message: error.message }),
     };
   }
 }
