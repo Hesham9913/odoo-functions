@@ -5,7 +5,7 @@ export async function handler(event, context) {
   const PASSWORD = "Moodz@Hesham@1998";
 
   try {
-    // Step 1: Login to Odoo
+    // Step 1: Login
     const loginRes = await fetch(`${ODOO_URL}/web/session/authenticate`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -21,17 +21,16 @@ export async function handler(event, context) {
     });
 
     const loginData = await loginRes.json();
-    const sessionCookie = loginRes.headers.get("set-cookie");
-    const session_id = sessionCookie?.split(";")[0]?.split("=")[1];
+    const session_id = loginData.result?.session_id;
 
-    if (!session_id || !loginData.result || !loginData.result.uid) {
+    if (!session_id) {
       return {
         statusCode: 401,
-        body: JSON.stringify({ error: "❌ Authentication failed: Invalid session or credentials" }),
+        body: JSON.stringify({ error: "Login failed: No session ID returned." }),
       };
     }
 
-    // Step 2: Make API call using session_id
+    // Step 2: Make authenticated request
     const apiRes = await fetch(`${ODOO_URL}/web/dataset/call_kw`, {
       method: "POST",
       headers: {
@@ -42,7 +41,7 @@ export async function handler(event, context) {
         jsonrpc: "2.0",
         method: "call",
         params: {
-          model: "res.partner", // Example model
+          model: "res.partner",
           method: "search_read",
           args: [],
           kwargs: {
@@ -54,16 +53,17 @@ export async function handler(event, context) {
       }),
     });
 
-    const apiData = await apiRes.json();
+    const data = await apiRes.json();
 
     return {
       statusCode: 200,
-      body: JSON.stringify(apiData, null, 2),
+      body: JSON.stringify(data, null, 2),
     };
-  } catch (error) {
+
+  } catch (err) {
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: "🔥 Internal error", message: error.message }),
+      body: JSON.stringify({ error: err.message || "Unknown error" }),
     };
   }
 }
